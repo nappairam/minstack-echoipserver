@@ -2,7 +2,8 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr, AddrParseError};
 use std::str::FromStr;
 use std::{fs::File, io::BufReader};
 
-use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
+use axum::{http::{StatusCode, HeaderMap}, response::IntoResponse, routing::get, Json, Router};
+use axum::extract::ConnectInfo;
 use serde::Serialize;
 use serde::Deserialize;
 use clap_serde_derive::{
@@ -80,17 +81,17 @@ async fn main() {
         .await
         .unwrap();
     tracing::debug!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await.unwrap();
 }
 
-fn get_ip() -> IpAddr {
-    IpAddr::V4(Ipv4Addr::LOCALHOST)
+fn get_ip(_headers: &HeaderMap, addr: SocketAddr) -> IpAddr {
+    addr.ip()
 }
 
 // basic handler that responds with a static string
-async fn root() -> String {
+async fn root(headers: HeaderMap, ConnectInfo(addr): ConnectInfo<SocketAddr>) -> String {
     tracing::trace!("Get request: /");
-    get_ip().to_string()
+    get_ip(&headers, addr).to_string()
 }
 
 #[derive(Serialize)]
@@ -98,7 +99,9 @@ struct Ip {
     ip: IpAddr,
 }
 
-async fn get_ip_json() -> impl IntoResponse {
-    let ip = Ip { ip: get_ip() };
+async fn get_ip_json(headers: HeaderMap, ConnectInfo(addr): ConnectInfo<SocketAddr>) -> impl IntoResponse {
+    let ip = get_ip(&headers, addr);
+    let ip = Ip { ip };
+    tracing::error!("{:?}", headers);
     (StatusCode::CREATED, Json(ip))
 }
