@@ -71,7 +71,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let config = get_config();
-    println!("Config is {:?}", &config);
+    tracing::info!("Config is {:?}", &config);
 
     let app = Router::new()
         .route("/", get(root))
@@ -88,7 +88,6 @@ fn get_ip(_headers: &HeaderMap, addr: SocketAddr) -> IpAddr {
     addr.ip()
 }
 
-// basic handler that responds with a static string
 async fn root(headers: HeaderMap, ConnectInfo(addr): ConnectInfo<SocketAddr>) -> String {
     tracing::trace!("Get request: /");
     get_ip(&headers, addr).to_string()
@@ -102,6 +101,5 @@ struct Ip {
 async fn get_ip_json(headers: HeaderMap, ConnectInfo(addr): ConnectInfo<SocketAddr>) -> impl IntoResponse {
     let ip = get_ip(&headers, addr);
     let ip = Ip { ip };
-    tracing::error!("{:?}", headers);
-    (StatusCode::CREATED, Json(ip))
+    (StatusCode::OK, Json(ip))
 }
