@@ -10,12 +10,21 @@
       let
         pkgs = import nixpkgs { inherit system; };
         naersk-lib = pkgs.callPackage naersk { };
-      in
-      {
-        defaultPackage = naersk-lib.buildPackage {
+        bin = naersk-lib.buildPackage {
           pname = "echoipserver";
           src = ./.;
         };
+      in
+      {
+        defaultPackage = bin;
+        packages.docker = pkgs.dockerTools.buildImage {
+            name = "echoipserver";
+            tag = "latest";
+            copyToRoot = [ bin ];
+            config = {
+              Cmd = [ "${bin}/bin/echoipserver" ];
+            };
+          };
         devShell = with pkgs; mkShell {
           buildInputs = [ cargo rustc rustfmt rustPackages.clippy ];
           RUST_SRC_PATH = rustPlatform.rustLibSrc;
