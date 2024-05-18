@@ -14,6 +14,12 @@
           pname = "echoipserver";
           src = ./.;
         };
+        upload-image = pkgs.writeShellScriptBin "upload-image" ''
+          set -eu
+          OCI_ARCHIVE=$(nix build .#docker --no-link --print-out-paths)
+          DOCKER_REPOSITORY="docker://nappairam/minstack-echoipserver"
+          ${pkgs.skopeo}/bin/skopeo copy --dest-creds="nappairam:$DOCKERHUB_TOKEN" "docker-archive:$OCI_ARCHIVE" "$DOCKER_REPOSITORY"
+        '';
       in
       {
         defaultPackage = bin;
@@ -25,6 +31,7 @@
               Cmd = [ "${bin}/bin/echoipserver" ];
             };
           };
+        apps.upload-image = utils.lib.mkApp { drv = upload-image; };
         devShell = with pkgs; mkShell {
           buildInputs = [ cargo rustc rustfmt rustPackages.clippy ];
           RUST_SRC_PATH = rustPlatform.rustLibSrc;

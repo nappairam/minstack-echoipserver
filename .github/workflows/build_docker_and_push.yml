@@ -1,0 +1,19 @@
+name: "Build docker image and push"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+      - name: Building docker image
+        run: nix build .#docker --no-link --print-out-paths
+      - name: Push Image
+        if: github.ref == 'refs/heads/main'
+        run: |
+          nix run ".#upload-image"
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
