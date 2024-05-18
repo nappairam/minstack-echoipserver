@@ -28,7 +28,7 @@
             tag = "latest";
             copyToRoot = [ bin ];
             config = {
-              Cmd = [ "${bin}/bin/echoipserver" ];
+              Entrypoint = [ "${bin}/bin/echoipserver" ];
             };
           };
         apps.upload-image = utils.lib.mkApp { drv = upload-image; };
